@@ -9,7 +9,7 @@ module.exports = {
     development: {
       host: "127.0.0.1",     // Localhost (default: none)
     //   host:"172.168.3.77",
-      port: 8545,            // Standard Ethereum port (default: none),// ganache-cli
+      port: 7545,            // Standard Ethereum port (default: none),// ganache-cli
       network_id: "*",       // Any network (default: none)
       gas: 67219750000,
       gasPrice: 50,

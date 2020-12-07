@@ -7,7 +7,7 @@ const NewEthCrossChainManager = artifacts.require('./../../contracts/core/.0/Cro
 contract('EthCrossChain', (accounts) => {
 
     before(async function () {
-        this.ECCD = await EthCrossChainData.new({ from: accounts[0], value: web3.utils.toWei('0', 'ether'), gas: 10000000, gasPrice: 50 });
+        this.ECCD = await EthCrossChainData.new({ from: accounts[1], value: web3.utils.toWei('0', 'ether'), gas: 10000000, gasPrice: 50 });
         console.log("this.ECCD.address = ", this.ECCD.address);
         this.ECCM = await EthCrossChainManager.new(this.ECCD.address, { from: accounts[0], value: web3.utils.toWei('0', 'ether'), gas: 200000000, gasPrice: 50 });
         console.log("this.ECCM.address........... = ", this.ECCM.address);
