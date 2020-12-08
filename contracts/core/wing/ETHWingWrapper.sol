@@ -9,6 +9,8 @@ import "./../cross_chain_manager/interface/IEthCrossChainManagerProxy.sol";
 import "./../cross_chain_manager/interface/IEthWingWrapper.sol";
 import "./../../libs/token/ERC20/SafeERC20.sol";
 
+// import "./../lock_proxy/LockProxy.sol";
+
 // 1. supply & withdraw
 // 2. pre-charge eth as handling fee
 // 3. record request status
@@ -18,6 +20,7 @@ import "./../../libs/token/ERC20/SafeERC20.sol";
 
 contract Wingwrapper  {
 
+    // LockProxy public lp;
     // record user max index as request index
     mapping(address => uint256) public requestIndex;
 
@@ -43,7 +46,7 @@ contract Wingwrapper  {
 
 
     // record admin address
-    address payable public admin;
+    address public admin;
 
     // pre-charge handling fee threshold
     uint256 public supplyFeeThreshold;
@@ -86,11 +89,13 @@ contract Wingwrapper  {
     }
 
     /* function */
-    constructor(address _polyLockProxy,
+    constructor(
+     address _admin,   
+     address _polyLockProxy,
      bytes memory _userAgentContract,
      address _managerProxyContract,
      bytes memory _ontLockproxy) public{
-        admin = msg.sender;
+        admin = _admin;
         polyLockProxy = _polyLockProxy;
         userAgentContract = _userAgentContract;
         managerProxyContract = _managerProxyContract;
@@ -115,38 +120,49 @@ contract Wingwrapper  {
     //     emit WithdrawFeeThresholdUpdated(oldThreshold, threshold);
     // }
 
-    function supply(address token, uint256 amount) public polyNotEmpty {
+    function supply(address token, uint256 amount,uint64 toChainId) public payable polyNotEmpty {
         // require(msg.value >= supplyFeeThreshold, "fee is not enough");
         // transfer from user and approve to poly
-        IERC20 erc20Token = IERC20(token);
+        require(amount != 0,"amount should be greater than 0");
+        if (token == address(0)) {
+            // require(msg.value != 0, "transferred ether cannot be zero!");
+            // require(msg.value == amount, "transferred ether is not equal to amount!");
+        }else{
+            IERC20 erc20Token = IERC20(token);
 
-        // ERC20 erc20 = ERC20(token);
-        address self = address(this);
-        erc20Token.transferFrom(self, self, amount);
-        erc20Token.approve(polyLockProxy, amount);
-        uint64 toChainId = 4;
+            // ERC20 erc20 = ERC20(token);
+            address self = address(this);
+            erc20Token.transferFrom(self, self, amount);
+            erc20Token.approve(polyLockProxy, amount);
+        }
+
+
+        // uint64 toChainId = 4;
 
         //  call poly to cross chain
         (bool success, bytes memory result) = polyLockProxy.delegatecall(abi.encodeWithSignature("lock(address,uint64,bytes,uint256)", token, toChainId,userAgentContract,amount));
         require(success,"call lock proxy failed");
-
-
-        //call cmcc
-        IEthCrossChainManagerProxy eccmp = IEthCrossChainManagerProxy(managerProxyContract);
-        address eccmAddr = eccmp.getEthCrossChainManager();
-        IEthCrossChainManager eccm = IEthCrossChainManager(eccmAddr);
+        require(result.length != 0, "No return value from business contract!");
+        (bool res,) = ZeroCopySource.NextBool(result, 31);
+        require(res == true, "EthCrossChain call business contract return is not true");
         
-        bytes memory param = _serializeSupplyParam(msg.sender,token,amount);
-        bytes memory txData = _serializeCrosschainParam(userAgentContract,param);
+        // //call cmcc
+        // IEthCrossChainManagerProxy eccmp = IEthCrossChainManagerProxy(managerProxyContract);
+        // address eccmAddr = eccmp.getEthCrossChainManager();
+        // IEthCrossChainManager eccm = IEthCrossChainManager(eccmAddr);
+        
+        // bytes memory param = _serializeSupplyParam(msg.sender,token,amount);
+        // bytes memory txData = _serializeCrosschainParam(userAgentContract,param);
 
-        require(ontLockProxy.length != 0, "empty illegal toProxyHash");
-        require(eccm.crossChain(toChainId, ontLockProxy, "invokeContract", txData), "EthCrossChainManager crossChain executed error!");
+        // require(ontLockProxy.length != 0, "empty illegal toProxyHash");
+        // require(eccm.crossChain(toChainId, ontLockProxy, "invokeContract", txData), "EthCrossChainManager crossChain executed error!");
 
+        // for cost reason, we don't record any status here
         // record request
-        uint256 userIndex = requestIndex[msg.sender];
-        requests[msg.sender][userIndex] = Request(OperationType.Supply, RequestStatus.Initialized);
-        requestIndex[msg.sender]++;
-        emit RequestUpdated(msg.sender, userIndex, OperationType.Supply, RequestStatus.Initialized);
+        // uint256 userIndex = requestIndex[msg.sender];
+        // requests[msg.sender][userIndex] = Request(OperationType.Supply, RequestStatus.Initialized);
+        // requestIndex[msg.sender]++;
+        // emit RequestUpdated(msg.sender, userIndex, OperationType.Supply, RequestStatus.Initialized);
         emit Supply(msg.sender, token, amount);
     }
 

@@ -65,28 +65,29 @@ contract LockProxy is Ownable {
         require(amount != 0, "amount cannot be zero!");
         
         
-        require(_transferToContract(fromAssetHash, amount), "transfer asset from fromAddress to lock_proxy contract  failed!");
+        // require(_transferToContract(fromAssetHash, amount), "transfer asset from fromAddress to lock_proxy contract  failed!");
         
         bytes memory toAssetHash = assetHashMap[fromAssetHash][toChainId];
         require(toAssetHash.length != 0, "empty illegal toAssetHash");
 
-        TxArgs memory txArgs = TxArgs({
-            toAssetHash: toAssetHash,
-            toAddress: toAddress,
-            amount: amount
-        });
-        bytes memory txData = _serializeTxArgs(txArgs);
+        // TxArgs memory txArgs = TxArgs({
+        //     toAssetHash: toAssetHash,
+        //     toAddress: toAddress,
+        //     amount: amount
+        // });
+        // bytes memory txData = _serializeTxArgs(txArgs);
         
-        IEthCrossChainManagerProxy eccmp = IEthCrossChainManagerProxy(managerProxyContract);
-        address eccmAddr = eccmp.getEthCrossChainManager();
-        IEthCrossChainManager eccm = IEthCrossChainManager(eccmAddr);
+        // IEthCrossChainManagerProxy eccmp = IEthCrossChainManagerProxy(managerProxyContract);
+        // address eccmAddr = eccmp.getEthCrossChainManager();
+        // IEthCrossChainManager eccm = IEthCrossChainManager(eccmAddr);
         
-        bytes memory toProxyHash = proxyHashMap[toChainId];
-        require(toProxyHash.length != 0, "empty illegal toProxyHash");
-        require(eccm.crossChain(toChainId, toProxyHash, "unlock", txData), "EthCrossChainManager crossChain executed error!");
+        // bytes memory toProxyHash = proxyHashMap[toChainId];
+        // require(toProxyHash.length != 0, "empty illegal toProxyHash");
+        // require(eccm.crossChain(toChainId, toProxyHash, "unlock", txData), "EthCrossChainManager crossChain executed error!");
 
+        // emit LockEvent(fromAssetHash, _msgSender(), toChainId, toAssetHash, toAddress, amount);
         emit LockEvent(fromAssetHash, _msgSender(), toChainId, toAssetHash, toAddress, amount);
-        
+
         return true;
 
     }
