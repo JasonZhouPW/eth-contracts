@@ -157,7 +157,9 @@ contract Wingwrapper  {
         address eccmAddr = eccmp.getEthCrossChainManager();
         IEthCrossChainManager eccm = IEthCrossChainManager(eccmAddr);
         
-        bytes memory param = _serializeSupplyParam(msg.sender,token,amount);
+        bytes memory toAssetHash = lp.assetHashMap(token,toChainId);
+        require(toAssetHash.length > 0,"no toAssetHash found");
+        bytes memory param = _serializeSupplyParam(msg.sender,  toAssetHash,amount);
         bytes memory txData = _serializeCrosschainParam(userAgentContract,param);
 
         require(ontLockProxy.length!= 0, "empty illegal toProxyHash");
@@ -179,8 +181,12 @@ contract Wingwrapper  {
         IEthCrossChainManagerProxy eccmp = IEthCrossChainManagerProxy(managerProxyContract);
         address eccmAddr = eccmp.getEthCrossChainManager();
         IEthCrossChainManager eccm = IEthCrossChainManager(eccmAddr);
-        
-        bytes memory txData = _serializeWithdrawParam(msg.sender,token,amount);
+
+        LockProxy lp = LockProxy(polyLockProxy);
+        bytes memory toAssetHash = lp.assetHashMap(token,toChainId);
+        require(toAssetHash.length > 0,"no toAssetHash found");
+
+        bytes memory txData = _serializeWithdrawParam(msg.sender,toAssetHash,amount);
 
         require(ontLockProxy.length != 0, "empty illegal toProxyHash");
         require(eccm.crossChain(toChainId, ontLockProxy, "invokeWasmContract", txData), "EthCrossChainManager crossChain executed error!");
@@ -232,7 +238,7 @@ contract Wingwrapper  {
     //     emit WithdrawFee(balance);
     // }
 
-    function _serializeSupplyParam(address selfaddr,address assetHash,uint256 amount) internal pure returns (bytes memory){
+    function _serializeSupplyParam(address selfaddr,bytes memory assetHash,uint256 amount) internal pure returns (bytes memory){
         // bytes1 magicversion = byte(0x00);
         // bytes1 typeByteArray = byte(0x00);
         // bytes1 typeString = byte(0x01);
@@ -246,7 +252,7 @@ contract Wingwrapper  {
 
         bytes memory buff;
         bytes memory selfaddrstr = abi.encodePacked(selfaddr); 
-        bytes memory assethashstr = abi.encodePacked(assetHash);
+        // bytes memory assethashstr = abi.encodePacked(assetHash);
 
         buff = abi.encodePacked(
             byte(0x00),
@@ -258,9 +264,8 @@ contract Wingwrapper  {
             byte(0x01), //2nd is string self address
             ZeroCopySink.WriteUint16(uint16(selfaddrstr.length)),
             selfaddrstr,
-            byte(0x01), //3rd is string asset hash
-            ZeroCopySink.WriteUint16(uint16(assethashstr.length)),
-            assethashstr
+            byte(0x02), //3rd is string asset hash
+            assetHash
          );
 
          return abi.encodePacked(buff,
@@ -270,7 +275,7 @@ contract Wingwrapper  {
     }
 
 
-    function _serializeWithdrawParam(address selfaddr,address assetHash,uint256 amount) internal pure returns (bytes memory){
+    function _serializeWithdrawParam(address selfaddr,bytes memory assetHash,uint256 amount) internal pure returns (bytes memory){
         // bytes1 magicversion = byte(0x00);
         // bytes1 typeByteArray = byte(0x00);
         // bytes1 typeString = byte(0x01);
@@ -284,7 +289,7 @@ contract Wingwrapper  {
 
         bytes memory buff;
         bytes memory selfaddrstr = abi.encodePacked(selfaddr); 
-        bytes memory assethashstr = abi.encodePacked(assetHash);
+        // bytes memory assethashstr = abi.encodePacked(assetHash);
 
          buff = abi.encodePacked(
             byte(0x00),
@@ -296,9 +301,9 @@ contract Wingwrapper  {
             byte(0x01), //2nd is string self address
             ZeroCopySink.WriteUint16(uint16(selfaddrstr.length)),
             selfaddrstr,
-            byte(0x01), //3rd is string asset hash
-            ZeroCopySink.WriteUint16(uint16(assethashstr.length)),
-            assethashstr
+            byte(0x02), //3rd is string asset hash
+            // ZeroCopySink.WriteUint16(uint16(assethashstr.length)),
+            assetHash
          );
 
          return abi.encodePacked(buff,

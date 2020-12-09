@@ -53,6 +53,16 @@ contract('EthCrossChain', (accounts) => {
                 manager:this.ECCMP.address
             });
         });
+
+
+        it('this.Lockproxy.bindProxyHash',async function() {
+            const {logs} = await this.LockProxy.bindProxyHash("4","0xdf19600d334bb13c6a9e3e9777aa8ec6ed6a4a89");
+            expectEvent.inLogs(logs,'BindProxyEvent', {
+                toChainId:"4",
+                targetProxyHash:"0xdf19600d334bb13c6a9e3e9777aa8ec6ed6a4a89"
+            });
+        });
+
         it('this.Lockproxy.bindAssetHash',async function(){
             const {logs} = await this.LockProxy.bindAssetHash("0x0000000000000000000000000000000000000000",
                                                 "4",
