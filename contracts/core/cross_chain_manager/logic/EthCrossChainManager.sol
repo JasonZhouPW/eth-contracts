@@ -108,7 +108,7 @@ contract EthCrossChainManager is IEthCrossChainManager, UpgradableECCM {
             ZeroCopySink.WriteVarBytes(txData)
         );
         
-        // Must save it in the storage to be included in the proof to be verified.
+        // // Must save it in the storage to be included in the proof to be verified.
         require(eccd.putEthTxHash(keccak256(rawParam)), "Save ethTxHash by index to Data contract failed!");
         
         // Fire the cross chain event denoting there is a cross chain request from Ethereum network to other public chains through Poly chain network

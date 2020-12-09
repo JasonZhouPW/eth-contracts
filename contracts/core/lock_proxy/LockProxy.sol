@@ -65,7 +65,7 @@ contract LockProxy is Ownable {
         require(amount != 0, "amount cannot be zero!");
         
         
-        // require(_transferToContract(fromAssetHash, amount), "transfer asset from fromAddress to lock_proxy contract  failed!");
+        require(_transferToContract(fromAssetHash, amount), "transfer asset from fromAddress to lock_proxy contract  failed!");
         
         bytes memory toAssetHash = assetHashMap[fromAssetHash][toChainId];
         require(toAssetHash.length != 0, "empty illegal toAssetHash");

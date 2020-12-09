@@ -8,6 +8,7 @@ import "./../cross_chain_manager/interface/IEthCrossChainManager.sol";
 import "./../cross_chain_manager/interface/IEthCrossChainManagerProxy.sol";
 import "./../cross_chain_manager/interface/IEthWingWrapper.sol";
 import "./../../libs/token/ERC20/SafeERC20.sol";
+import "./../lock_proxy/LockProxy.sol";
 
 // import "./../lock_proxy/LockProxy.sol";
 
@@ -19,6 +20,7 @@ import "./../../libs/token/ERC20/SafeERC20.sol";
 // TODO: notify formatted param to cross chain. use ZeroCopy serialization and deserialization
 
 contract Wingwrapper  {
+    using SafeERC20 for IERC20;
 
     // LockProxy public lp;
     // record user max index as request index
@@ -35,7 +37,7 @@ contract Wingwrapper  {
     mapping(address => mapping(uint256 => Request)) requests;
 
     // record poly lock proxy contract address
-    address public polyLockProxy;
+    address payable public polyLockProxy;
 
     //ontology user agent contract address
     bytes public userAgentContract;
@@ -54,6 +56,8 @@ contract Wingwrapper  {
 
     /* events */
     event PolyLockProxyUpdated(address oldProxy, address newProxy);
+    event OntLockProxyUpdated(bytes oldProxy, bytes newProxy);
+
 
     event SupplyFeeThresholdUpdated(uint256 oldThreshold, uint256 newThreshold);
     event WithdrawFeeThresholdUpdated(uint256 oldThreshold, uint256 newThreshold);
@@ -91,7 +95,7 @@ contract Wingwrapper  {
     /* function */
     constructor(
      address _admin,   
-     address _polyLockProxy,
+     address payable _polyLockProxy,
      bytes memory _userAgentContract,
      address _managerProxyContract,
      bytes memory _ontLockproxy) public{
@@ -102,7 +106,7 @@ contract Wingwrapper  {
         ontLockProxy = _ontLockproxy;
     }
 
-    function updatePolyProxy(address newProxy) public onlyAdmin {
+    function updatePolyProxy(address payable newProxy) public onlyAdmin {
         address oldProxy = polyLockProxy;
         polyLockProxy = newProxy;
         emit PolyLockProxyUpdated(oldProxy, newProxy);
@@ -120,42 +124,44 @@ contract Wingwrapper  {
     //     emit WithdrawFeeThresholdUpdated(oldThreshold, threshold);
     // }
 
+    function updateOntLockProxy(bytes memory _ontProxy) public onlyAdmin {
+        bytes memory oldProxy = ontLockProxy;
+        ontLockProxy = _ontProxy;
+        emit OntLockProxyUpdated(oldProxy,ontLockProxy);
+    }
+
+
     function supply(address token, uint256 amount,uint64 toChainId) public payable polyNotEmpty {
         // require(msg.value >= supplyFeeThreshold, "fee is not enough");
         // transfer from user and approve to poly
+        LockProxy lp = LockProxy(polyLockProxy);
         require(amount != 0,"amount should be greater than 0");
         if (token == address(0)) {
-            // require(msg.value != 0, "transferred ether cannot be zero!");
-            // require(msg.value == amount, "transferred ether is not equal to amount!");
+            require(msg.value != 0, "transferred ether cannot be zero!");
+            require(msg.value == amount, "transferred ether is not equal to amount!");
+            require(lp.lock.value(amount)(token, toChainId,userAgentContract,amount),"lp lock failed");
+
+            // polyLockProxy.transfer(amount);
         }else{
             IERC20 erc20Token = IERC20(token);
-
             // ERC20 erc20 = ERC20(token);
             address self = address(this);
-            erc20Token.transferFrom(self, self, amount);
-            erc20Token.approve(polyLockProxy, amount);
+            erc20Token.safeTransferFrom(msg.sender, self, amount);
+            erc20Token.safeApprove(polyLockProxy, amount);
+            require(lp.lock(token, toChainId,userAgentContract,amount),"lp lock failed");
+
         }
-
-
-        // uint64 toChainId = 4;
-
-        //  call poly to cross chain
-        (bool success, bytes memory result) = polyLockProxy.delegatecall(abi.encodeWithSignature("lock(address,uint64,bytes,uint256)", token, toChainId,userAgentContract,amount));
-        require(success,"call lock proxy failed");
-        require(result.length != 0, "No return value from business contract!");
-        (bool res,) = ZeroCopySource.NextBool(result, 31);
-        require(res == true, "EthCrossChain call business contract return is not true");
         
         // //call cmcc
-        // IEthCrossChainManagerProxy eccmp = IEthCrossChainManagerProxy(managerProxyContract);
-        // address eccmAddr = eccmp.getEthCrossChainManager();
-        // IEthCrossChainManager eccm = IEthCrossChainManager(eccmAddr);
+        IEthCrossChainManagerProxy eccmp = IEthCrossChainManagerProxy(managerProxyContract);
+        address eccmAddr = eccmp.getEthCrossChainManager();
+        IEthCrossChainManager eccm = IEthCrossChainManager(eccmAddr);
         
-        // bytes memory param = _serializeSupplyParam(msg.sender,token,amount);
-        // bytes memory txData = _serializeCrosschainParam(userAgentContract,param);
+        bytes memory param = _serializeSupplyParam(msg.sender,token,amount);
+        bytes memory txData = _serializeCrosschainParam(userAgentContract,param);
 
-        // require(ontLockProxy.length != 0, "empty illegal toProxyHash");
-        // require(eccm.crossChain(toChainId, ontLockProxy, "invokeContract", txData), "EthCrossChainManager crossChain executed error!");
+        require(ontLockProxy.length!= 0, "empty illegal toProxyHash");
+        require(eccm.crossChain(toChainId, ontLockProxy, "invokeWasmContract", txData), "EthCrossChainManager crossChain executed error!");
 
         // for cost reason, we don't record any status here
         // record request
@@ -166,7 +172,7 @@ contract Wingwrapper  {
         emit Supply(msg.sender, token, amount);
     }
 
-    function withdraw(address token, uint256 amount) public polyNotEmpty {
+    function withdraw(address token, uint256 amount,uint64 toChainId) public polyNotEmpty {
         // require(msg.value >= withdrawFeeThreshold, "fee is not enough");
         // TODO: call poly to cross chain
         //call cmcc
@@ -177,18 +183,18 @@ contract Wingwrapper  {
         bytes memory txData = _serializeWithdrawParam(msg.sender,token,amount);
 
         require(ontLockProxy.length != 0, "empty illegal toProxyHash");
-        require(eccm.crossChain(4, ontLockProxy, "invokeContract", txData), "EthCrossChainManager crossChain executed error!");
+        require(eccm.crossChain(toChainId, ontLockProxy, "invokeWasmContract", txData), "EthCrossChainManager crossChain executed error!");
 
 
         // record request
-        uint256 userIndex = requestIndex[msg.sender];
-        requests[msg.sender][userIndex] = Request(OperationType.Withdraw, RequestStatus.Initialized);
-        requestIndex[msg.sender]++;
-        emit RequestUpdated(msg.sender, userIndex, OperationType.Withdraw, RequestStatus.Initialized);
+        // uint256 userIndex = requestIndex[msg.sender];
+        // requests[msg.sender][userIndex] = Request(OperationType.Withdraw, RequestStatus.Initialized);
+        // requestIndex[msg.sender]++;
+        // emit RequestUpdated(msg.sender, userIndex, OperationType.Withdraw, RequestStatus.Initialized);
         emit Withdraw(msg.sender, token, amount);
     }
 
-    function withdrawWing(bytes memory targetAddress ) public polyNotEmpty {
+    function withdrawWing(bytes memory targetAddress,uint64 toChainId ) public polyNotEmpty {
         // require(msg.value >= withdrawFeeThreshold, "fee is not enough");
         // TODO: call poly to cross chain
         //call cmcc
@@ -199,14 +205,14 @@ contract Wingwrapper  {
         bytes memory txData = _serializeWithdrawWingParam(msg.sender,targetAddress);
 
         require(ontLockProxy.length!= 0, "empty illegal toProxyHash");
-        require(eccm.crossChain(4, ontLockProxy, "invokeContract", txData), "EthCrossChainManager crossChain executed error!");
+        require(eccm.crossChain(toChainId, ontLockProxy, "invokeWasmContract", txData), "EthCrossChainManager crossChain executed error!");
 
 
         // record request
-        uint256 userIndex = requestIndex[msg.sender];
-        requests[msg.sender][userIndex] = Request(OperationType.Withdraw, RequestStatus.Initialized);
-        requestIndex[msg.sender]++;
-        emit RequestUpdated(msg.sender, userIndex, OperationType.Withdraw, RequestStatus.Initialized);
+        // uint256 userIndex = requestIndex[msg.sender];
+        // requests[msg.sender][userIndex] = Request(OperationType.Withdraw, RequestStatus.Initialized);
+        // requestIndex[msg.sender]++;
+        // emit RequestUpdated(msg.sender, userIndex, OperationType.Withdraw, RequestStatus.Initialized);
         emit WithdrawWing(msg.sender,targetAddress);
     }
 
