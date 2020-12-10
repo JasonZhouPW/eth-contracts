@@ -1,7 +1,7 @@
 abigen
 info.txt
 tmp
-build
+/build/*
 .idea
 
 node_modules

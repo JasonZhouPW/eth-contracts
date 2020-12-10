@@ -1,17 +1,14 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
-pragma solidity ^0.5.0;
+pragma solidity ^0.6.12;
 
 // import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v3.2.1-solc-0.7/contracts/token/ERC20/ERC20.sol";
-import "./../../libs/common/ZeroCopySource.sol";
-import "./../../libs/common/ZeroCopySink.sol";
-import "./../cross_chain_manager/interface/IEthCrossChainManager.sol";
-import "./../cross_chain_manager/interface/IEthCrossChainManagerProxy.sol";
-import "./../cross_chain_manager/interface/IEthWingWrapper.sol";
-import "./../../libs/token/ERC20/SafeERC20.sol";
-import "./ILockProxy.sol";
-
-// import "./../lock_proxy/LockProxy.sol";
-
+import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
+import "./libs/ZeroCopySource.sol";
+import "./libs/ZeroCopySink.sol";
+import "./interfaces/IEthCrossChainManager.sol";
+import "./interfaces/IEthCrossChainManagerProxy.sol";
+import "./interfaces/IEthWingWrapper.sol";
+import "./interfaces/ILockProxy.sol";
 // 1. supply & withdraw
 // 2. pre-charge eth as handling fee
 // 3. record request status

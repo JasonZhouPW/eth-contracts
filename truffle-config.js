@@ -1,32 +1,49 @@
-// const HDWalletProvider = require('truffle-hdwallet-provider');
-// const infuraKey = "fj4jll3k.....";
-//
-// const fs = require('fs');
-// const mnemonic = fs.readFileSync(".secret").toString().trim();
+const HDWalletProvider = require("@truffle/hdwallet-provider");
 
 module.exports = {
-  networks: {
-    development: {
-      host: "127.0.0.1",     // Localhost (default: none)
-    //   host:"172.168.3.77",
-      port: 7545,            // Standard Ethereum port (default: none),// ganache-cli
-      network_id: "*",       // Any network (default: none)
-      gas: 67219750000,
-      gasPrice: 50,
-    },
-  },
-
   compilers: {
     solc: {
-      version: "0.5.15",
-    //   version: ">=0.4.33 <0.6.0",    // Fetch exact version from solc-bin (default: truffle's version)
-    //   docker: true,        // Use "0.5.1" you've installed locally with docker (default: false)
-       settings: {
+      version: "0.6.12",
+      settings: {
         optimizer: {
           enabled: true,
-          runs: 200,
+          runs: 10000000,
         },
-       }
-    }
-  }
+      },
+    },
+  },
+  networks: {
+    development: {
+      host: "127.0.0.1",
+      port: 8545,
+      network_id: "*", // Match any network id
+    },
+    local_testnet: {
+      host: "ganache",
+      port: 8545,
+      network_id: "*", // Match any network id
+    },
+    mainnet: {
+      provider: infuraProvider("mainnet"),
+      network_id: 1,
+    },
+    ropsten: {
+      provider: infuraProvider("ropsten"),
+      network_id: 3,
+    },
+  },
+  mocha: {
+    timeout: 100000, // prevents tests from failing when pc is under heavy load
+    reporter: "Spec",
+  },
+  plugins: ["solidity-coverage"],
+};
+
+function infuraProvider(network) {
+  return () => {
+    return new HDWalletProvider(
+      "61a66f7441f1c7150a34bc050be12a680cce9720403d472233ee2fff8ade8951",
+      `https://${network}.infura.io/v3/ba2038b90830474080b13f29f1213564`
+    );
+  };
 }
