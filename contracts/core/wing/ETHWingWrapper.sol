@@ -8,7 +8,7 @@ import "./../cross_chain_manager/interface/IEthCrossChainManager.sol";
 import "./../cross_chain_manager/interface/IEthCrossChainManagerProxy.sol";
 import "./../cross_chain_manager/interface/IEthWingWrapper.sol";
 import "./../../libs/token/ERC20/SafeERC20.sol";
-import "./../lock_proxy/LockProxy.sol";
+import "./ILockProxy.sol";
 
 // import "./../lock_proxy/LockProxy.sol";
 
@@ -134,7 +134,7 @@ contract Wingwrapper  {
     function supply(address token, uint256 amount,uint64 toChainId) public payable polyNotEmpty {
         // require(msg.value >= supplyFeeThreshold, "fee is not enough");
         // transfer from user and approve to poly
-        LockProxy lp = LockProxy(polyLockProxy);
+        ILockProxy lp = ILockProxy(polyLockProxy);
         require(amount != 0,"amount should be greater than 0");
         if (token == address(0)) {
             require(msg.value != 0, "transferred ether cannot be zero!");
@@ -182,7 +182,7 @@ contract Wingwrapper  {
         address eccmAddr = eccmp.getEthCrossChainManager();
         IEthCrossChainManager eccm = IEthCrossChainManager(eccmAddr);
 
-        LockProxy lp = LockProxy(polyLockProxy);
+        ILockProxy lp = ILockProxy(polyLockProxy);
         bytes memory toAssetHash = lp.assetHashMap(token,toChainId);
         require(toAssetHash.length > 0,"no toAssetHash found");
 
