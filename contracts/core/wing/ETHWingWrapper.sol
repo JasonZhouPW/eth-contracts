@@ -57,7 +57,7 @@ contract Wingwrapper  {
     /* events */
     event PolyLockProxyUpdated(address oldProxy, address newProxy);
     event OntLockProxyUpdated(bytes oldProxy, bytes newProxy);
-
+    event ManagerProxyUpdate(address oldProxy, address newProxy);
 
     event SupplyFeeThresholdUpdated(uint256 oldThreshold, uint256 newThreshold);
     event WithdrawFeeThresholdUpdated(uint256 oldThreshold, uint256 newThreshold);
@@ -124,10 +124,22 @@ contract Wingwrapper  {
     //     emit WithdrawFeeThresholdUpdated(oldThreshold, threshold);
     // }
 
+    function updateUserAgentContract(bytes memory _userAgent) public onlyAdmin {
+        bytes memory oldProxy = userAgentContract;
+        userAgentContract = _userAgent;
+        emit OntLockProxyUpdated(oldProxy,userAgentContract);
+    }
+
     function updateOntLockProxy(bytes memory _ontProxy) public onlyAdmin {
         bytes memory oldProxy = ontLockProxy;
         ontLockProxy = _ontProxy;
         emit OntLockProxyUpdated(oldProxy,ontLockProxy);
+    }
+
+    function updateManagerProxyContract(address _managerProxyContract) public onlyAdmin {
+        address oldProxy = managerProxyContract;
+        managerProxyContract = _managerProxyContract;
+        emit PolyLockProxyUpdated(oldProxy, _managerProxyContract);
     }
 
 
@@ -257,12 +269,12 @@ contract Wingwrapper  {
         buff = abi.encodePacked(
             byte(0x00),
             byte(0x10),  //param list
-            ZeroCopySink.WriteUint16(4), // we have 4 parameters
+            ZeroCopySink.WriteUint32(uint32(4)), // we have 4 parameters
             byte(0x01),  //1st is string "supply"
-            ZeroCopySink.WriteUint16(uint16(method.length)),
-            ZeroCopySink.WriteVarBytes(method),
+            ZeroCopySink.WriteUint32(uint32(method.length)),
+            method,
             byte(0x01), //2nd is string self address
-            ZeroCopySink.WriteUint16(uint16(selfaddrstr.length)),
+            ZeroCopySink.WriteUint32(uint32(selfaddrstr.length)),
             selfaddrstr,
             byte(0x02), //3rd is string asset hash
             assetHash
@@ -270,8 +282,12 @@ contract Wingwrapper  {
 
          return abi.encodePacked(buff,
             byte(0x04), //4th is amount 
-            ZeroCopySink.WriteUint255(amount));
+            ZeroCopySink.WriteUint128(amount));
 
+    }
+
+    function _testU128(uint256 amount) public view returns (bytes memory) {
+        return ZeroCopySink.WriteUint128(amount);
     }
 
 
@@ -294,21 +310,20 @@ contract Wingwrapper  {
          buff = abi.encodePacked(
             byte(0x00),
             byte(0x10),  //param list
-            ZeroCopySink.WriteUint16(4), // we have 4 parameters
+            ZeroCopySink.WriteUint32(4), // we have 4 parameters
             byte(0x01),  //1st is string "withdraw"
-            ZeroCopySink.WriteUint16(uint16(method.length)),
-            ZeroCopySink.WriteVarBytes(method),
+            ZeroCopySink.WriteUint32(uint16(method.length)),
+            method,
             byte(0x01), //2nd is string self address
-            ZeroCopySink.WriteUint16(uint16(selfaddrstr.length)),
+            ZeroCopySink.WriteUint32(uint16(selfaddrstr.length)),
             selfaddrstr,
             byte(0x02), //3rd is string asset hash
-            // ZeroCopySink.WriteUint16(uint16(assethashstr.length)),
             assetHash
          );
 
          return abi.encodePacked(buff,
             byte(0x04), //4th is amount 
-            ZeroCopySink.WriteUint255(amount));
+            ZeroCopySink.WriteUint128(amount));
     }
 
 
@@ -329,15 +344,15 @@ contract Wingwrapper  {
         buff = abi.encodePacked(
             byte(0x00),
             byte(0x10),  //param list
-            ZeroCopySink.WriteUint16(3), // we have 4 parameters
+            ZeroCopySink.WriteUint32(3), // we have 4 parameters
             byte(0x01),  //1st is string "supply"
-            ZeroCopySink.WriteUint16(uint16(method.length)),
-            ZeroCopySink.WriteVarBytes(method),
+            ZeroCopySink.WriteUint32(uint16(method.length)),
+            method,
             byte(0x01), //2nd is string self address
-            ZeroCopySink.WriteUint16(uint16(selfaddrstr.length)),
+            ZeroCopySink.WriteUint32(uint16(selfaddrstr.length)),
             selfaddrstr,
             byte(0x01), //3rd is string ontology address
-            ZeroCopySink.WriteUint16(uint16(targetAddress.length)),
+            ZeroCopySink.WriteUint32(uint16(targetAddress.length)),
             targetAddress
          );
 

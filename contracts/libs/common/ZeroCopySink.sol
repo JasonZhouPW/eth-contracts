@@ -136,6 +136,34 @@ library ZeroCopySink {
         return buff;
     }
 
+    /* @notice          Convert uint128 value into bytes
+    *  @param v         The uint128 value
+    *  @return          Converted bytes array
+    */
+    function WriteUint128(uint256 v) internal pure returns(bytes memory) {
+        require(v <= 0x7fffffffffffffffffffffffffffffff, "Value exceeds uint128 range");
+        bytes memory buff;
+
+        assembly{
+            buff := mload(0x40)
+            let byteLen := 0x10
+            mstore(buff, byteLen)
+            for {
+                let mindex := 0x00
+                let vindex := 0x1f
+            } lt(mindex, byteLen) {
+                mindex := add(mindex, 0x01)
+                vindex := sub(vindex, 0x01)
+            }{
+                mstore8(add(add(buff, 0x20), mindex), byte(vindex, v))
+            }
+            mstore(0x40, add(buff, 0x30))
+        }
+        return buff;
+    }
+
+
+
     /* @notice          Convert limited uint256 value into bytes
     *  @param v         The uint256 value
     *  @return          Converted bytes array
