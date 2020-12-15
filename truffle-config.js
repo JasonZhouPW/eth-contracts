@@ -62,9 +62,11 @@ module.exports = {
 
         ropsten: {
             provider: function () {
-                return new HDWalletProvider(mnemonic, "https://ropsten.infura.io/v3/1989627167124010b1a203134eb4029d")
+                return new HDWalletProvider(mnemonic, "https://ropsten.infura.io/v3/77e66bd0e207406bbc6896a93095878f")
             },
             network_id: 3,       // Any network (default: none)
+            gasPrice: 100000000000,  // 200 gwei (in wei) (default: 100 gwei)
+
         },
         ethereum: {
             provider: function () {

@@ -263,7 +263,8 @@ contract Wingwrapper  {
         bytes memory method = bytes("supply");
 
         bytes memory buff;
-        bytes memory selfaddrstr = abi.encodePacked(selfaddr); 
+        
+        string memory selfaddrstr = _addrtoHexString(selfaddr); 
         // bytes memory assethashstr = abi.encodePacked(assetHash);
 
         buff = abi.encodePacked(
@@ -274,7 +275,7 @@ contract Wingwrapper  {
             ZeroCopySink.WriteUint32(uint32(method.length)),
             method,
             byte(0x01), //2nd is string self address
-            ZeroCopySink.WriteUint32(uint32(selfaddrstr.length)),
+            ZeroCopySink.WriteUint32(uint32(bytes(selfaddrstr).length)),
             selfaddrstr,
             byte(0x02), //3rd is string asset hash
             assetHash
@@ -286,9 +287,24 @@ contract Wingwrapper  {
 
     }
 
-    function _testU128(uint256 amount) public view returns (bytes memory) {
-        return ZeroCopySink.WriteUint128(amount);
-    }
+    function _addrtoHexString(address addr) internal pure returns(string memory) {
+        bytes memory data =  abi.encodePacked(addr);
+        bytes memory alphabet = "0123456789abcdef";
+
+        bytes memory str = new bytes(2 + data.length * 2);
+        str[0] = "0";
+        str[1] = "x";
+        for (uint i = 0; i < data.length; i++) {
+            str[2+i*2] = alphabet[uint(uint8(data[i] >> 4))];
+            str[3+i*2] = alphabet[uint(uint8(data[i] & 0x0f))];
+        }
+    return string(str);
+}
+
+
+    // function _testU128(uint256 amount) public view returns (bytes memory) {
+    //     return ZeroCopySink.WriteUint128(amount);
+    // }
 
 
     function _serializeWithdrawParam(address selfaddr,bytes memory assetHash,uint256 amount) internal pure returns (bytes memory){
@@ -304,7 +320,7 @@ contract Wingwrapper  {
         bytes memory method = bytes("withdraw");
 
         bytes memory buff;
-        bytes memory selfaddrstr = abi.encodePacked(selfaddr); 
+        string memory selfaddrstr = _addrtoHexString(selfaddr); 
         // bytes memory assethashstr = abi.encodePacked(assetHash);
 
          buff = abi.encodePacked(
@@ -312,10 +328,10 @@ contract Wingwrapper  {
             byte(0x10),  //param list
             ZeroCopySink.WriteUint32(4), // we have 4 parameters
             byte(0x01),  //1st is string "withdraw"
-            ZeroCopySink.WriteUint32(uint16(method.length)),
+            ZeroCopySink.WriteUint32(uint32(method.length)),
             method,
             byte(0x01), //2nd is string self address
-            ZeroCopySink.WriteUint32(uint16(selfaddrstr.length)),
+            ZeroCopySink.WriteUint32(uint32(bytes(selfaddrstr).length)),
             selfaddrstr,
             byte(0x02), //3rd is string asset hash
             assetHash
@@ -340,19 +356,19 @@ contract Wingwrapper  {
         bytes memory method = bytes("withdrawWing");
 
         bytes memory buff;
-        bytes memory selfaddrstr = abi.encodePacked(selfaddr); 
+        string memory selfaddrstr = _addrtoHexString(selfaddr); 
         buff = abi.encodePacked(
             byte(0x00),
             byte(0x10),  //param list
             ZeroCopySink.WriteUint32(3), // we have 4 parameters
             byte(0x01),  //1st is string "supply"
-            ZeroCopySink.WriteUint32(uint16(method.length)),
+            ZeroCopySink.WriteUint32(uint32(method.length)),
             method,
             byte(0x01), //2nd is string self address
-            ZeroCopySink.WriteUint32(uint16(selfaddrstr.length)),
+            ZeroCopySink.WriteUint32(uint32(bytes(selfaddrstr).length)),
             selfaddrstr,
             byte(0x01), //3rd is string ontology address
-            ZeroCopySink.WriteUint32(uint16(targetAddress.length)),
+            ZeroCopySink.WriteUint32(uint32(targetAddress.length)),
             targetAddress
          );
 
