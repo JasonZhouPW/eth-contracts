@@ -15,7 +15,7 @@ module.exports = function(deployer,network,accounts) {
   // deployer.deploy(cmcc,eccd.address)
   //   .then(()=> console.log("cmcc:" + cmcc.address));
 
-  deployer.deploy(wingWrapper,accounts[0],"0xD8aE73e06552E270340b63A8bcAbf9277a1aac99","0x12d3075e2b6d94bc2e059f5db366463063d383c8","0xb600c8a2e8852832B75DB9Da1A3A1c173eAb28d8","0x9ec1da335e16aeda4074d4c69ca503c2ef3e701f")
+  deployer.deploy(wingWrapper,accounts[0],"0xD8aE73e06552E270340b63A8bcAbf9277a1aac99","0x10c99f65e82ee0ad15ff6063ec77da47ce857245","0xb600c8a2e8852832B75DB9Da1A3A1c173eAb28d8","0xb5ab5549f473de0f7655c0c60ac7bf3f8da4cfca")
     .then(()=> console.log("wingWrapper:" + wingWrapper.address));
 
 };
